@@ -1,0 +1,101 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+// @codingStandardsIgnoreFile
+
+?>
+<?php
+/**
+ * @see \Magento\Sales\Block\Adminhtml\Items\Column\Name
+ */
+?>
+
+<?php if ($_item = $block->getItem()): ?>
+    <div id="order_item_<?= $block->escapeHtml($_item->getId()) ?>_title"
+         class="product-title">
+        <?= $block->escapeHtml($_item->getName()) ?>
+    </div>
+    <div class="product-sku-block">
+        <span><?= $block->escapeHtml(__('SKU'))?>:</span> <?= implode('<br />', $this->helper('Magento\Catalog\Helper\Data')->splitSku($block->escapeHtml($block->getSku()))) ?>
+    </div>
+
+    <?php if ($block->getOrderOptions()): ?>
+        <dl class="item-options">
+            <?php foreach ($block->getOrderOptions() as $_option): ?>
+                <dt><?= $block->escapeHtml($_option['label']) ?>:</dt>
+                <dd>
+                    <?php if (isset($_option['custom_view']) && $_option['custom_view']): ?>
+                        <?= $block->escapeHtml($block->getCustomizedOptionValue($_option)) ?>
+                    <?php else: ?>
+                        <?php $_option = $block->getFormattedOption($_option['value']); ?>
+                        <?= $block->escapeHtml($_option['value']) ?>
+                        <?php if (isset($_option['remainder']) && $_option['remainder']): ?>
+                            <?php $dots = 'dots' . uniqid(); ?>
+                            <span id="<?= /* @noEscape */ $dots; ?>"> ...</span>
+                            <?php  $id = 'id' . uniqid(); ?>
+                            <span id="<?= /* @noEscape */ $id; ?>"><?= $block->escapeHtml($_option['remainder']) ?></span>
+                            <script>
+                                require(['prototype'], function(){
+                                    $('<?= /* @noEscape */ $id; ?>').hide();
+                                    $('<?= /* @noEscape */ $id; ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $id; ?>').show();});
+                                    $('<?= /* @noEscape */ $id; ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $dots; ?>').hide();});
+                                    $('<?= /* @noEscape */ $id; ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $id; ?>').hide();});
+                                    $('<?= /* @noEscape */ $id; ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $dots; ?>').show();});
+                                });
+                            </script>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </dd>
+            <?php endforeach; ?>
+        </dl>
+    <?php endif; ?>
+    
+    <?php
+    $quote_item_id = $_item->getQuoteItemId();
+    $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+    $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+    $connection = $resource->getConnection();
+    $magneto_quote = $resource->getTableName('magneto_warranty');
+    $sql = "Select * FROM " . $magneto_quote . " WHERE quote_item_id = " . $quote_item_id;
+    $result_warranty = $connection->fetchAll($sql);
+    $currencysymbol = $objectManager->get('Magento\Store\Model\StoreManagerInterface');
+    $currency = $currencysymbol->getStore()->getCurrentCurrencyCode(); 
+    ?>
+
+
+     <!-- Warranty section start-->
+
+                <?php  if($result_warranty != ' '): ?>
+
+                    <?php foreach($result_warranty as $warrantytotal):  ?>
+
+                        <?php   $oneyear = $warrantytotal['one_year_warranty']; 
+                                $twoyear = $warrantytotal['two_year_warranty'];
+                                $threeyear = $warrantytotal['three_year_warranty'];
+                                $installfee = $warrantytotal['installation_fee'] ;
+                        ?>
+                        <?php if($oneyear > 0): ?>
+                            <?php echo "+ One Year Warranty : ".''. $oneyear; ?> <?php echo $currency; ?><br>
+                        <?php endif; ?>
+                        <?php if($twoyear > 0): ?>
+                            <?php echo "+ Two Year Warranty : ".''. $twoyear; ?> <?php echo $currency; ?><br>
+                        <?php endif; ?>
+                        <?php if($threeyear > 0): ?>
+                            <?php echo "+ Three Year Warranty : ".''. $threeyear; ?> <?php echo $currency; ?><br>
+                        <?php endif; ?>
+                        <?php if($installfee > 0): ?>
+                            <?php echo "+ Installation Fees : ".''. $installfee; ?> <?php echo $currency; ?>
+                        <?php endif; ?>
+
+                    <?php endforeach; ?>
+
+
+                <?php endif; ?>
+
+                <!-- Warranty section end -->
+
+    <?= $block->escapeHtml($_item->getDescription()) ?>
+<?php endif; ?>
